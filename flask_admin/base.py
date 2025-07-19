@@ -597,6 +597,8 @@ class Admin:
         self.name = name
 
         self.index_view = index_view or AdminIndexView(endpoint=endpoint, url=url)
+        self.index_view_bp: Blueprint = None
+
         self.endpoint = endpoint or self.index_view.endpoint
         self.url = url or self.index_view.url
         self.static_url_path = static_url_path
@@ -649,11 +651,17 @@ class Admin:
         self._views.append(view)
 
         # If app was provided in constructor, register view with Flask app
-        if self.app is not None:
-            self.app.register_blueprint(
+        if self.index_view_bp is not None:
+            self.index_view_bp.register_blueprint(
                 view.create_blueprint(self),
                 host=self.host,
             )
+        else:
+            # self.app.register_blueprint(
+            #     view_bp,
+            #     host=self.host,
+            # )
+            self.index_view_bp = view.create_blueprint(self)
 
         self._add_view_to_menu(view)
 
@@ -866,9 +874,10 @@ class Admin:
                 index_view=index_view, endpoint=endpoint, url=url
             )
 
-        # Register views
-        for view in self._views:
-            app.register_blueprint(view.create_blueprint(self), host=self.host)
+        # Register views -> no needed anymore
+
+        # We just register a single Blueprint to the app
+        app.register_blueprint(self.index_view_bp)
 
     def _init_extension(self) -> None:
         if not hasattr(self.app, "extensions"):
